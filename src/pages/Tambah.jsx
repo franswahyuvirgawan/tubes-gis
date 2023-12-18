@@ -171,8 +171,9 @@ const Tambah = () => {
     const convertedData = data.map((coordinatesArray) =>
       coordinatesArray.map(({ lat, lng }) => [lat, lng])
     );
-    const encode = L.polyline(convertedData[0]);
-    setValueCreated(encode.encodePath());
+
+    const encode = polyline.encode(convertedData[0]);
+    setValueCreated(encode);
   };
 
   const calculateDistance = (coord1, coord2) => {
