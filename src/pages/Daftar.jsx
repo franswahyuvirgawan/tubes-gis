@@ -11,8 +11,6 @@ const Daftar = () => {
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  console.log(store);
-
   const handleRegister = async (e) => {
     setLoading(true);
     e.preventDefault();

@@ -122,8 +122,6 @@ const Polyline = () => {
         console.log("Updated Polylines:", storedPolyline);
       });
 
-      console.log(storedPolyline);
-
       // Jika diperlukan, perbarui state dengan polyline yang sudah diperbarui
       // setEncodedPolylines(updatedPolylines);
     }

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
+import { createJSONStorage, devtools, persist } from "zustand/middleware";
 
 const useUserStore = create()(
   devtools(
@@ -16,7 +16,7 @@ const useUserStore = create()(
         userToken: "",
         updateUserToken: (userToken) => set({ userToken }),
       }),
-      { name: "useUserStore" }
+      { name: "useUserStore", storage: createJSONStorage(() => sessionStorage) }
     )
   )
 );

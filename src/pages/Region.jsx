@@ -30,8 +30,6 @@ function Region() {
     fetchDataPerUser();
   }, []);
 
-  console.log(loading);
-
   return (
     <>
       <div className="px-[40px] text-xs flex justify-center flex-col items-center gap-[120px]">

@@ -111,8 +111,6 @@ function MapCluster() {
       });
   }, [locationData]);
 
-  console.log(gisData);
-
   const handleDeleteMarker = async (locationId) => {
     try {
       // Data yang ingin Anda kirim dalam body request
@@ -144,8 +142,6 @@ function MapCluster() {
       console.error("Error deleting location data", error);
     }
   };
-
-  console.log(gisData);
 
   return (
     <div className="flex justify-center items-center py-[40px] flex-col font-martian text-white gap-[50px]">

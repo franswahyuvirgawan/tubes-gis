@@ -28,7 +28,6 @@ function SemuaDataUSer() {
     fetchUser();
   }, []);
 
-  console.log(data);
   return (
     <>
       <div className="px-[40px] text-xs flex justify-center flex-col items-center gap-[60px]">

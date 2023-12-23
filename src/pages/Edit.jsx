@@ -11,6 +11,7 @@ import { FeatureGroup, MapContainer, TileLayer } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import haversine from "haversine";
 import toast, { Toaster } from "react-hot-toast";
+import SelectOptions from "../components/SelectOptions";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -26,6 +27,9 @@ L.Icon.Default.mergeOptions({
 const Edit = () => {
   const store = useUserStore();
   const [dataAllDesa, setDataAllDesa] = useState([]);
+  const [dataAllProvinsi, setDataAllProvinsi] = useState([]);
+  const [dataAllKabupaten, setDataAllKabupaten] = useState([]);
+  const [dataAllKecamatan, setDataAllKecamatan] = useState([]);
   const [dataFilterAllDesa, setDataFilterAllDesa] = useState([]);
   const [dataAllEksistingJalan, setDataAllEksistingJalan] = useState([]);
   const [dataAllKondisiJalan, setDataAllKondisiJalan] = useState([]);
@@ -39,6 +43,9 @@ const Edit = () => {
 
   // select
   const [valueDesa, setValueDesa] = useState("");
+  const [valueProvinsi, setValueProvinsi] = useState("");
+  const [valueKabupaten, setValueKabupaten] = useState("");
+  const [valueKecamatan, setValueKecamatan] = useState("");
   const [valueEksistingJalan, setValueEksistingJalan] = useState("");
   const [valueKondisiJalan, setValueKondisiJalan] = useState("");
   const [valueJenisJalan, setValueJenisJalan] = useState("");
@@ -63,7 +70,7 @@ const Edit = () => {
     }
   };
 
-  const fetchDataDesa = async () => {
+  const fetchGetDataDesa = async () => {
     try {
       const response = await axios.get(
         "https://gisapis.manpits.xyz/api/mregion",
@@ -139,13 +146,112 @@ const Edit = () => {
     }
   };
 
+  const fetchDataDesa = async (valueKecamatan) => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/desa/${valueKecamatan}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      const options = response.data.desa.map((item) => ({
+        value: item.id,
+        label: item.value,
+      }));
+      setDataAllDesa(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataProvinsi = async () => {
+    try {
+      const response = await axios.get(
+        "https://gisapis.manpits.xyz/api/mregion",
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      const options = response.data.provinsi.map((item) => ({
+        value: item.id,
+        label: item.provinsi,
+      }));
+      setDataAllProvinsi(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataKabupaten = async (valueProvinsi) => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/kabupaten/${valueProvinsi}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      const options = response.data.kabupaten.map((item) => ({
+        value: item.id,
+        label: item.value,
+      }));
+      setDataAllKabupaten(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataKecamatan = async (valueKabupaten) => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/kecamatan/${valueKabupaten}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      const options = response.data.kecamatan.map((item) => ({
+        value: item.id,
+        label: item.value,
+      }));
+      setDataAllKecamatan(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   useEffect(() => {
-    fetchDataDesa();
     fetchDataEksistingJalan();
+    fetchGetDataDesa();
+    fetchDataProvinsi();
     fetchDataKondisiJalan();
     fetchDataJenisJalan();
     fetchDataRuasJalan();
   }, []);
+
+  useEffect(() => {
+    if (valueProvinsi) {
+      fetchDataKabupaten(valueProvinsi);
+    }
+  }, [valueProvinsi]);
+
+  useEffect(() => {
+    if (valueKabupaten) {
+      fetchDataKecamatan(valueKabupaten);
+    }
+  }, [valueKabupaten]);
+
+  useEffect(() => {
+    if (valueKecamatan) {
+      fetchDataDesa(valueKecamatan);
+    }
+  }, [valueKecamatan]);
 
   const featureGroupRef = useRef();
   const [decodePolylines, setDecodePolylines] = useState([]);
@@ -177,8 +283,6 @@ const Edit = () => {
     const encodedPath = polyline.encode(convertedData[0]);
     setEditedData(encodedPath);
   };
-
-  console.log(editedData);
 
   const calculateDistance = (coord1, coord2) => {
     const start = { latitude: coord1[0], longitude: coord1[1] };
@@ -258,6 +362,15 @@ const Edit = () => {
     };
     setErrors({});
     const inputErrors = {};
+    if (!valueProvinsi) {
+      inputErrors.valueProvinsi = "Silahkan isi provinsi";
+    }
+    if (!valueKabupaten) {
+      inputErrors.valueKabupaten = "Silahkan isi kabupaten";
+    }
+    if (!valueKecamatan) {
+      inputErrors.valueKecamatan = "Silahkan isi kecamatan";
+    }
     if (!valueDesa && !filteredDataDesa[0]?.value) {
       inputErrors.valueDesa = "Silahkan isi desa";
     }
@@ -307,6 +420,27 @@ const Edit = () => {
       console.log(error);
     }
   };
+
+  const region = [
+    {
+      title: "Provinsi",
+      data: dataAllProvinsi,
+      setValue: setValueProvinsi,
+      errors: errors?.valueProvinsi,
+    },
+    {
+      title: "Kabupaten",
+      data: dataAllKabupaten,
+      setValue: setValueKabupaten,
+      errors: errors?.valueKabupaten,
+    },
+    {
+      title: "Kecamatan",
+      data: dataAllKecamatan,
+      setValue: setValueKecamatan,
+      errors: errors?.valueKecamatan,
+    },
+  ];
 
   const customStyles = {
     control: (base) => ({
@@ -381,72 +515,34 @@ const Edit = () => {
         </MapContainer>
       </div>
       <div className="flex flex-col gap-[20px] h-screen justify-start items-center w-[70%] px-[70px]">
+        {region.map((item, key) => (
+          <SelectOptions
+            key={key}
+            title={item.title}
+            data={item.data}
+            setValue={item.setValue}
+            errors={item.errors}
+          />
+        ))}
         <div className="w-full flex flex-col gap-2">
           <label htmlFor="">Desa</label>
           {filteredDataDesa.length > 0 ? (
             <Select
               defaultValue={filteredDataDesa} // Jika hanya satu item, mungkin Anda ingin mengakses index 0
               styles={customStyles}
-              options={dataAllDesa}
               onChange={(e) => setValueDesa(e.value)}
             />
           ) : (
             <>
-              <Select styles={customStyles} />
+              <Select
+                styles={customStyles}
+                options={dataAllDesa}
+                onChange={(e) => setValueDesa(e.value)}
+              />
             </>
           )}
           {errors?.valueDesa && (
             <p className="px-2 text-red-500 text-xs">{errors?.valueDesa}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <input
-            value={valueKodeRuas}
-            onChange={(e) => setValueKodeRuas(e.target.value)}
-            type="text"
-            placeholder="Kode Ruas"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
-          />
-          {errors?.valueKodeRuas && (
-            <p className="px-2 text-red-500 text-xs">{errors?.valueKodeRuas}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <input
-            value={valueRuasJalan}
-            onChange={(e) => setValueRuasJalan(e.target.value)}
-            type="text"
-            placeholder="Nama Ruas"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
-          />
-          {errors?.valueRuasJalan && (
-            <p className="px-2 text-red-500 text-xs">
-              {errors?.valueRuasJalan}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <input
-            value={jarak + " meter"}
-            disabled
-            type="text"
-            placeholder="Panjang"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
-          />
-          {errors?.jarak && (
-            <p className="px-2 text-red-500 text-xs">{errors?.jarak}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <input
-            value={valueLebar}
-            onChange={(e) => setValueLebar(e.target.value)}
-            type="text"
-            placeholder="Lebar"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
-          />
-          {errors?.valueLebar && (
-            <p className="px-2 text-red-500 text-xs">{errors?.valueLebar}</p>
           )}
         </div>
         <div className="w-full flex flex-col gap-2">
@@ -518,6 +614,44 @@ const Edit = () => {
             </p>
           )}
         </div>
+        <div className="flex flex-col gap-2 w-full">
+          <input
+            value={valueKodeRuas}
+            onChange={(e) => setValueKodeRuas(e.target.value)}
+            type="text"
+            placeholder="Kode Ruas"
+            className="input input-xs h-11 input-bordered lg:w-full w-full"
+          />
+          {errors?.valueKodeRuas && (
+            <p className="px-2 text-red-500 text-xs">{errors?.valueKodeRuas}</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2 w-full">
+          <input
+            value={valueRuasJalan}
+            onChange={(e) => setValueRuasJalan(e.target.value)}
+            type="text"
+            placeholder="Nama Ruas"
+            className="input input-xs h-11 input-bordered lg:w-full w-full"
+          />
+          {errors?.valueRuasJalan && (
+            <p className="px-2 text-red-500 text-xs">
+              {errors?.valueRuasJalan}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2 w-full">
+          <input
+            value={valueLebar}
+            onChange={(e) => setValueLebar(e.target.value)}
+            type="text"
+            placeholder="Lebar"
+            className="input input-xs h-11 input-bordered lg:w-full w-full"
+          />
+          {errors?.valueLebar && (
+            <p className="px-2 text-red-500 text-xs">{errors?.valueLebar}</p>
+          )}
+        </div>
         <div className="w-full flex flex-col gap-2">
           <input
             value={valueKeterangan}
@@ -530,6 +664,18 @@ const Edit = () => {
             <p className="px-2 text-red-500 text-xs">
               {errors?.valueKeterangan}
             </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2 w-full">
+          <input
+            value={jarak + " meter"}
+            disabled
+            type="text"
+            placeholder="Panjang"
+            className="input input-xs h-11 input-bordered lg:w-full w-full"
+          />
+          {errors?.jarak && (
+            <p className="px-2 text-red-500 text-xs">{errors?.jarak}</p>
           )}
         </div>
         <button

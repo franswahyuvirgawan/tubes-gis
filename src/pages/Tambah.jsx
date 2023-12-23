@@ -11,6 +11,8 @@ import { FeatureGroup, MapContainer, TileLayer } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import haversine from "haversine";
 import toast, { Toaster } from "react-hot-toast";
+import SelectOptions from "../components/SelectOptions";
+import Input from "../components/Input";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -26,6 +28,9 @@ L.Icon.Default.mergeOptions({
 const Tambah = () => {
   const store = useUserStore();
   const [dataAllDesa, setDataAllDesa] = useState([]);
+  const [dataAllProvinsi, setDataAllProvinsi] = useState([]);
+  const [dataAllKabupaten, setDataAllKabupaten] = useState([]);
+  const [dataAllKecamatan, setDataAllKecamatan] = useState([]);
   const [dataFilterAllDesa, setDataFilterAllDesa] = useState([]);
   const [dataAllEksistingJalan, setDataAllEksistingJalan] = useState([]);
   const [dataAllKondisiJalan, setDataAllKondisiJalan] = useState([]);
@@ -39,6 +44,9 @@ const Tambah = () => {
 
   // Select
   const [valueDesa, setValueDesa] = useState("");
+  const [valueProvinsi, setValueProvinsi] = useState("");
+  const [valueKabupaten, setValueKabupaten] = useState("");
+  const [valueKecamatan, setValueKecamatan] = useState("");
   const [valueEksistingJalan, setValueEksistingJalan] = useState("");
   const [valueKondisiJalan, setValueKondisiJalan] = useState("");
   const [valueJenisJalan, setValueJenisJalan] = useState("");
@@ -63,7 +71,27 @@ const Tambah = () => {
     }
   };
 
-  const fetchDataDesa = async () => {
+  const fetchDataDesa = async (valueKecamatan) => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/desa/${valueKecamatan}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      const options = response.data.desa.map((item) => ({
+        value: item.id,
+        label: item.value,
+      }));
+      setDataAllDesa(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataProvinsi = async () => {
     try {
       const response = await axios.get(
         "https://gisapis.manpits.xyz/api/mregion",
@@ -73,11 +101,51 @@ const Tambah = () => {
           },
         }
       );
-      const options = response.data.desa.map((item) => ({
+      const options = response.data.provinsi.map((item) => ({
         value: item.id,
-        label: item.desa,
+        label: item.provinsi,
       }));
-      setDataAllDesa(options);
+      setDataAllProvinsi(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataKabupaten = async (valueProvinsi) => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/kabupaten/${valueProvinsi}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      const options = response.data.kabupaten.map((item) => ({
+        value: item.id,
+        label: item.value,
+      }));
+      setDataAllKabupaten(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataKecamatan = async (valueKabupaten) => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/kecamatan/${valueKabupaten}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      const options = response.data.kecamatan.map((item) => ({
+        value: item.id,
+        label: item.value,
+      }));
+      setDataAllKecamatan(options);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -124,11 +192,29 @@ const Tambah = () => {
   };
 
   useEffect(() => {
-    fetchDataDesa();
+    fetchDataProvinsi();
     fetchDataEksistingJalan();
     fetchDataKondisiJalan();
     fetchDataJenisJalan();
   }, []);
+
+  useEffect(() => {
+    if (valueProvinsi) {
+      fetchDataKabupaten(valueProvinsi);
+    }
+  }, [valueProvinsi]);
+
+  useEffect(() => {
+    if (valueKabupaten) {
+      fetchDataKecamatan(valueKabupaten);
+    }
+  }, [valueKabupaten]);
+
+  useEffect(() => {
+    if (valueKecamatan) {
+      fetchDataDesa(valueKecamatan);
+    }
+  }, [valueKecamatan]);
 
   const featureGroupRef = useRef();
   const [decodePolylines, setDecodePolylines] = useState([]);
@@ -219,6 +305,15 @@ const Tambah = () => {
     };
     setErrors({});
     const inputErrors = {};
+    if (!valueProvinsi) {
+      inputErrors.valueProvinsi = "Silahkan isi provinsi";
+    }
+    if (!valueKabupaten) {
+      inputErrors.valueKabupaten = "Silahkan isi kabupaten";
+    }
+    if (!valueKecamatan) {
+      inputErrors.valueKecamatan = "Silahkan isi kecamatan";
+    }
     if (!valueDesa) {
       inputErrors.valueDesa = "Silahkan isi desa";
     }
@@ -265,42 +360,77 @@ const Tambah = () => {
     }
   };
 
-  const customStyles = {
-    control: (base) => ({
-      ...base,
-      background: "#1d232a",
-      border: "1px solid rgba(255, 255, 255, var(--tw-border-opacity, 0.2))",
-      color: "white",
-    }),
-    menu: (base) => ({
-      ...base,
-      background: "#1d232a",
-      color: "white",
-    }),
-    menuList: (base) => ({
-      ...base,
-      background: "#1d232a",
-      color: "white",
-    }),
-    option: (provided, state) => ({
-      ...provided,
-      color: "white",
-      backgroundColor: state.isHovered ? "#007bff" : null,
-      "&:hover": {
-        backgroundColor: "#007bff",
-      },
-    }),
-    singleValue: (provided) => ({
-      ...provided,
-      color: "white",
-    }),
-    input: (base) => ({
-      ...base,
-      color: "white",
-    }),
-  };
+  const region = [
+    {
+      title: "Provinsi",
+      data: dataAllProvinsi,
+      setValue: setValueProvinsi,
+      errors: errors?.valueProvinsi,
+    },
+    {
+      title: "Kabupaten",
+      data: dataAllKabupaten,
+      setValue: setValueKabupaten,
+      errors: errors?.valueKabupaten,
+    },
+    {
+      title: "Kecamatan",
+      data: dataAllKecamatan,
+      setValue: setValueKecamatan,
+      errors: errors?.valueKecamatan,
+    },
+    {
+      title: "Desa",
+      data: dataAllDesa,
+      setValue: setValueDesa,
+      errors: errors?.valueDesa,
+    },
+    {
+      title: "Eksisting Jalan",
+      data: dataAllEksistingJalan,
+      setValue: setValueEksistingJalan,
+      errors: errors?.valueEksistingJalan,
+    },
+    {
+      title: "Kondisi Jalan",
+      data: dataAllKondisiJalan,
+      setValue: setValueKondisiJalan,
+      errors: errors?.valueKondisiJalan,
+    },
+    {
+      title: "Jenis Jalan",
+      data: dataAllJenisJalan,
+      setValue: setValueJenisJalan,
+      errors: errors?.valueJenisJalan,
+    },
+  ];
 
-  console.log(errors);
+  const regionInput = [
+    {
+      placeholder: "Kode Ruas",
+      setValue: setValueKodeRuas,
+      value: valueKodeRuas,
+      errors: errors?.valueKodeRuas,
+    },
+    {
+      placeholder: "Nama Ruas",
+      setValue: setValueRuasJalan,
+      value: valueRuasJalan,
+      errors: errors?.valueRuasJalan,
+    },
+    {
+      placeholder: "Lebar",
+      setValue: setValueLebar,
+      value: valueLebar,
+      errors: errors?.valueLebar,
+    },
+    {
+      placeholder: "Keterangan",
+      setValue: setValueKeterangan,
+      value: valueKeterangan,
+      errors: errors?.valueKeterangan,
+    },
+  ];
 
   return (
     <div
@@ -340,43 +470,24 @@ const Tambah = () => {
         </MapContainer>
       </div>
       <div className="flex flex-col gap-[20px] h-screen justify-start items-center w-[70%] px-[70px]">
-        <div className="w-full flex flex-col gap-2">
-          <label htmlFor="">Desa</label>
-          <Select
-            styles={customStyles}
-            options={dataAllDesa}
-            onChange={(e) => setValueDesa(e.value)}
+        {region.map((item, key) => (
+          <SelectOptions
+            key={key}
+            errors={item.errors}
+            title={item.title}
+            data={item.data}
+            setValue={item.setValue}
           />
-          {errors?.valueDesa && (
-            <p className="px-2 text-red-500 text-xs">{errors?.valueDesa}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <input
-            value={valueKodeRuas}
-            onChange={(e) => setValueKodeRuas(e.target.value)}
-            type="text"
-            placeholder="Kode Ruas"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
+        ))}
+        {regionInput.map((item, key) => (
+          <Input
+            key={key}
+            errors={item.errors}
+            value={item.value}
+            placeholder={item.placeholder}
+            setValue={item.setValue}
           />
-          {errors?.valueKodeRuas && (
-            <p className="px-2 text-red-500 text-xs">{errors?.valueKodeRuas}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <input
-            value={valueRuasJalan}
-            onChange={(e) => setValueRuasJalan(e.target.value)}
-            type="text"
-            placeholder="Nama Ruas"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
-          />
-          {errors?.valueRuasJalan && (
-            <p className="px-2 text-red-500 text-xs">
-              {errors?.valueRuasJalan}
-            </p>
-          )}
-        </div>
+        ))}
         <div className="flex flex-col gap-2 w-full">
           <input
             value={jarak + " meter"}
@@ -387,77 +498,6 @@ const Tambah = () => {
           />
           {errors?.jarak && (
             <p className="px-2 text-red-500 text-xs">{errors?.jarak}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <input
-            value={valueLebar}
-            onChange={(e) => setValueLebar(e.target.value)}
-            type="text"
-            placeholder="Lebar"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
-          />
-          {errors?.valueLebar && (
-            <p className="px-2 text-red-500 text-xs">{errors?.valueLebar}</p>
-          )}
-        </div>
-        <div className="w-full flex flex-col gap-2">
-          <label htmlFor="">Eksisting Jalan</label>
-          <Select
-            styles={customStyles}
-            options={dataAllEksistingJalan}
-            onChange={(e) => {
-              setValueEksistingJalan(e.value);
-            }}
-          />
-          {errors?.valueEksistingJalan && (
-            <p className="px-2 text-red-500 text-xs">
-              {errors?.valueEksistingJalan}
-            </p>
-          )}
-        </div>
-        <div className="w-full flex flex-col gap-2">
-          <label htmlFor="">Kondisi Jalan</label>
-          <Select
-            styles={customStyles}
-            options={dataAllKondisiJalan}
-            onChange={(e) => {
-              setValueKondisiJalan(e.value);
-            }}
-          />
-          {errors?.valueKondisiJalan && (
-            <p className="px-2 text-red-500 text-xs">
-              {errors?.valueKondisiJalan}
-            </p>
-          )}
-        </div>
-        <div className="w-full flex flex-col gap-2">
-          <label htmlFor="">Jenis Jalan</label>
-          <Select
-            styles={customStyles}
-            options={dataAllJenisJalan}
-            onChange={(e) => {
-              setValueJenisJalan(e.value);
-            }}
-          />
-          {errors?.valueJenisJalan && (
-            <p className="px-2 text-red-500 text-xs">
-              {errors?.valueJenisJalan}
-            </p>
-          )}
-        </div>
-        <div className="w-full flex flex-col gap-2">
-          <input
-            value={valueKeterangan}
-            onChange={(e) => setValueKeterangan(e.target.value)}
-            type="text"
-            placeholder="Keterangan"
-            className="input input-xs h-11 input-bordered lg:w-full w-full"
-          />
-          {errors?.valueKeterangan && (
-            <p className="px-2 text-red-500 text-xs">
-              {errors?.valueKeterangan}
-            </p>
           )}
         </div>
         <button
