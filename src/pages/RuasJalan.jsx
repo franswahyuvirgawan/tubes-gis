@@ -100,6 +100,15 @@ function RuasJalan() {
                           <button
                             onClick={() => {
                               store.updateIdRuas(item.id);
+                              navigate("/lihat");
+                            }}
+                            className="btn btn-info btn-sm text-xs"
+                          >
+                            Lihat
+                          </button>
+                          <button
+                            onClick={() => {
+                              store.updateIdRuas(item.id);
                               navigate("/edit");
                             }}
                             className="btn btn-warning btn-sm text-xs"

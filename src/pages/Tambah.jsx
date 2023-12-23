@@ -469,7 +469,7 @@ const Tambah = () => {
           />
         </MapContainer>
       </div>
-      <div className="flex flex-col gap-[20px] h-screen justify-start items-center w-[70%] px-[70px]">
+      <div className="flex flex-col gap-[20px] justify-start items-center w-[70%] px-[70px]">
         {region.map((item, key) => (
           <SelectOptions
             key={key}

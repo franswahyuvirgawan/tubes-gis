@@ -24,7 +24,7 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/marker-shadow.png",
 });
 
-const Edit = () => {
+const Lihat = () => {
   const store = useUserStore();
   const [dataAllDesa, setDataAllDesa] = useState([]);
   const [dataAllProvinsi, setDataAllProvinsi] = useState([]);
@@ -492,22 +492,7 @@ const Edit = () => {
           scrollWheelZoom={true}
           style={{ height: "80vh", width: "1000px", borderRadius: "0px" }}
         >
-          <FeatureGroup ref={featureGroupRef}>
-            <EditControl
-              // onCreated={onCreated}
-              onEdited={onEdited}
-              // onDeleted={onDeleted}
-              position="topright"
-              draw={{
-                rectangle: false,
-                circle: false,
-                circlemarker: false,
-                marker: false,
-                polyline: false,
-                polygon: false,
-              }}
-            />
-          </FeatureGroup>
+          <FeatureGroup ref={featureGroupRef}></FeatureGroup>
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -515,19 +500,11 @@ const Edit = () => {
         </MapContainer>
       </div>
       <div className="flex flex-col gap-[20px] justify-start items-center w-[70%] px-[70px]">
-        {region.map((item, key) => (
-          <SelectOptions
-            key={key}
-            title={item.title}
-            data={item.data}
-            setValue={item.setValue}
-            errors={item.errors}
-          />
-        ))}
         <div className="w-full flex flex-col gap-2">
           <label htmlFor="">Desa</label>
           {filteredDataDesa.length > 0 ? (
             <Select
+              isDisabled={true}
               defaultValue={filteredDataDesa} // Jika hanya satu item, mungkin Anda ingin mengakses index 0
               styles={customStyles}
               onChange={(e) => setValueDesa(e.value)}
@@ -535,6 +512,7 @@ const Edit = () => {
           ) : (
             <>
               <Select
+                isDisabled={true}
                 styles={customStyles}
                 options={dataAllDesa}
                 onChange={(e) => setValueDesa(e.value)}
@@ -549,6 +527,7 @@ const Edit = () => {
           <label htmlFor="">Eksisting Jalan</label>
           {filteredEksistingJalan.length > 0 ? (
             <Select
+              isDisabled={true}
               defaultValue={filteredEksistingJalan}
               styles={customStyles}
               options={dataAllEksistingJalan}
@@ -572,6 +551,7 @@ const Edit = () => {
           <label htmlFor="">Kondisi Jalan</label>
           {filteredKondisiJalan.length > 0 ? (
             <Select
+              isDisabled={true}
               defaultValue={filteredKondisiJalan}
               styles={customStyles}
               options={dataAllKondisiJalan}
@@ -595,6 +575,7 @@ const Edit = () => {
           <label htmlFor="">Jenis Jalan</label>
           {filteredJenisJalan.length > 0 ? (
             <Select
+              isDisabled={true}
               defaultValue={filteredJenisJalan}
               styles={customStyles}
               options={dataAllJenisJalan}
@@ -616,6 +597,7 @@ const Edit = () => {
         </div>
         <div className="flex flex-col gap-2 w-full">
           <input
+            disabled
             value={valueKodeRuas}
             onChange={(e) => setValueKodeRuas(e.target.value)}
             type="text"
@@ -628,6 +610,7 @@ const Edit = () => {
         </div>
         <div className="flex flex-col gap-2 w-full">
           <input
+            disabled
             value={valueRuasJalan}
             onChange={(e) => setValueRuasJalan(e.target.value)}
             type="text"
@@ -642,6 +625,7 @@ const Edit = () => {
         </div>
         <div className="flex flex-col gap-2 w-full">
           <input
+            disabled
             value={valueLebar}
             onChange={(e) => setValueLebar(e.target.value)}
             type="text"
@@ -654,6 +638,7 @@ const Edit = () => {
         </div>
         <div className="w-full flex flex-col gap-2">
           <input
+            disabled
             value={valueKeterangan}
             onChange={(e) => setValueKeterangan(e.target.value)}
             type="text"
@@ -678,16 +663,9 @@ const Edit = () => {
             <p className="px-2 text-red-500 text-xs">{errors?.jarak}</p>
           )}
         </div>
-        <button
-          onClick={handleUpdate}
-          to="/ruas-jalan"
-          className="w-full btn btn-xs p-5 btn-primary flex flex-col items-center"
-        >
-          Edit
-        </button>
       </div>
     </div>
   );
 };
 
-export default Edit;
+export default Lihat;

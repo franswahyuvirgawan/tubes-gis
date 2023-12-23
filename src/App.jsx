@@ -19,6 +19,7 @@ import RuasJalan from "./pages/RuasJalan";
 import SemuaDataUser from "./pages/SemuaDataUser";
 import Tambah from "./pages/Tambah";
 import useUserStore from "./store/userStore";
+import Lihat from "./pages/Lihat";
 
 function App() {
   const store = useUserStore();
@@ -48,6 +49,7 @@ function App() {
             <Route path="/mkondisi" element={<KondisiJalan />} />
             <Route path="/ruas-jalan" element={<RuasJalan />} />
             <Route path="/tambah" element={<Tambah />} />
+            <Route path="/lihat" element={<Lihat />} />
             <Route path="/edit" element={<Edit />} />
           </Route>
         </Route>
