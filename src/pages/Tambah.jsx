@@ -490,7 +490,7 @@ const Tambah = () => {
         ))}
         <div className="flex flex-col gap-2 w-full">
           <input
-            value={jarak + " meter"}
+            value={parseFloat(jarak).toFixed(2) + " meter"}
             disabled
             type="text"
             placeholder="Panjang"

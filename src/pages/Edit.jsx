@@ -5,6 +5,7 @@ import Select from "react-select";
 import useUserStore from "../store/userStore";
 import polyline from "polyline-encoded";
 import L from "leaflet";
+import { PuffLoader } from "react-spinners";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet/dist/leaflet.css";
 import { FeatureGroup, MapContainer, TileLayer } from "react-leaflet";
@@ -130,6 +131,7 @@ const Edit = () => {
     }
   };
 
+  const [renderMap, setRenderMap] = useState(false);
   const fetchDataRuasJalan = async () => {
     try {
       const response = await axios.get(
@@ -141,6 +143,24 @@ const Edit = () => {
         }
       );
       setDataAllRuasJalan(response.data.ruasjalan);
+      setRenderMap(true);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataRuasNewJalan = async () => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/ruasjalan/${store.idRuas}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      setDataAllRuasJalan(response.data.ruasjalan);
+      setRenderMap(true);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -236,6 +256,12 @@ const Edit = () => {
   }, []);
 
   useEffect(() => {
+    if (renderMap) {
+      fetchDataRuasNewJalan();
+    }
+  }, [renderMap]);
+
+  useEffect(() => {
     if (valueProvinsi) {
       fetchDataKabupaten(valueProvinsi);
     }
@@ -271,18 +297,7 @@ const Edit = () => {
   }, [dataAllRuasJalan]);
 
   const [editedData, setEditedData] = useState([]);
-  const onEdited = (e) => {
-    const editedLayers = e.layers.getLayers();
-    const data = editedLayers.map((layer) =>
-      layer.getLatLngs().map((point) => ({ lat: point.lat, lng: point.lng }))
-    );
-    const convertedData = data.map((coordinatesArray) =>
-      coordinatesArray.map(({ lat, lng }) => [lat, lng])
-    );
-
-    const encodedPath = polyline.encode(convertedData[0]);
-    setEditedData(encodedPath);
-  };
+  const [jarak, setJarak] = useState(0);
 
   const calculateDistance = (coord1, coord2) => {
     const start = { latitude: coord1[0], longitude: coord1[1] };
@@ -302,13 +317,33 @@ const Edit = () => {
 
   const distances = calculateDistances(decodePolylines);
 
-  const [jarak, setJarak] = useState(0);
-
   useEffect(() => {
     for (let i = 0; i < distances.length; i++) {
       setJarak(distances[i]);
     }
-  }, [editedData, decodePolylines]);
+  }, [decodePolylines]);
+
+  const onEdited = (e) => {
+    const editedLayers = e.layers.getLayers();
+    const data = editedLayers.map((layer) =>
+      layer.getLatLngs().map((point) => ({ lat: point.lat, lng: point.lng }))
+    );
+    const convertedData = data.map((coordinatesArray) =>
+      coordinatesArray.map(({ lat, lng }) => [lat, lng])
+    );
+
+    const encodedPath = polyline.encode(convertedData[0]);
+    setEditedData(encodedPath);
+
+    // Update distance when map is edited
+    const decodedCoords = polyline.decode(encodedPath);
+    const distances = calculateDistances(decodedCoords);
+    const totalDistance = distances.reduce(
+      (sum, distance) => sum + distance,
+      0
+    );
+    setJarak(totalDistance);
+  };
 
   useEffect(() => {
     setValueKodeRuas(dataAllRuasJalan?.kode_ruas);
@@ -488,9 +523,9 @@ const Edit = () => {
         <MapContainer
           className="Map"
           center={{ lat: -8.60355596857304, lng: 115.25943918278261 }}
-          zoom={11}
+          zoom={20}
           scrollWheelZoom={true}
-          style={{ height: "80vh", width: "1000px", borderRadius: "0px" }}
+          // style={{ height: "80vh", width: "1000px", borderRadius: "0px" }}
         >
           <FeatureGroup ref={featureGroupRef}>
             <EditControl
@@ -513,6 +548,40 @@ const Edit = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
         </MapContainer>
+        {decodePolylines.length > 0 ? (
+          <MapContainer
+            className="Map"
+            center={decodePolylines[0]}
+            zoom={20}
+            scrollWheelZoom={true}
+            style={{ height: "80vh", width: "1000px", borderRadius: "0px" }}
+          >
+            <FeatureGroup ref={featureGroupRef}>
+              <EditControl
+                // onCreated={onCreated}
+                onEdited={onEdited}
+                // onDeleted={onDeleted}
+                position="topright"
+                draw={{
+                  rectangle: false,
+                  circle: false,
+                  circlemarker: false,
+                  marker: false,
+                  polyline: false,
+                  polygon: false,
+                }}
+              />
+            </FeatureGroup>
+            <TileLayer
+              attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          </MapContainer>
+        ) : (
+          <div className="w-full absolute flex flex-row items-center justify-center bg-[#1D232A] h-screen bg-opacity-90">
+            <PuffLoader color="#fff" />
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-[20px] justify-start items-center w-[70%] px-[70px]">
         {region.map((item, key) => (
@@ -559,7 +628,14 @@ const Edit = () => {
             />
           ) : (
             <>
-              <Select styles={customStyles} />
+              <Select
+                styles={customStyles}
+                options={dataAllEksistingJalan}
+                className="transparent-input"
+                onChange={(e) => {
+                  setValueEksistingJalan(e.value);
+                }}
+              />
             </>
           )}
           {errors?.valueEksistingJalan && (
@@ -582,7 +658,14 @@ const Edit = () => {
             />
           ) : (
             <>
-              <Select styles={customStyles} />
+              <Select
+                defaultValue={filteredKondisiJalan}
+                options={dataAllKondisiJalan}
+                className="transparent-input"
+                onChange={(e) => {
+                  setValueKondisiJalan(e.value);
+                }}
+              />
             </>
           )}
           {errors?.valueKondisiJalan && (
@@ -605,7 +688,14 @@ const Edit = () => {
             />
           ) : (
             <>
-              <Select styles={customStyles} />
+              <Select
+                styles={customStyles}
+                options={dataAllJenisJalan}
+                className="transparent-input"
+                onChange={(e) => {
+                  setValueJenisJalan(e.value);
+                }}
+              />
             </>
           )}
           {errors?.valueJenisJalan && (
@@ -668,7 +758,7 @@ const Edit = () => {
         </div>
         <div className="flex flex-col gap-2 w-full">
           <input
-            value={jarak + " meter"}
+            value={parseFloat(jarak).toFixed(2) + " Meter"}
             disabled
             type="text"
             placeholder="Panjang"

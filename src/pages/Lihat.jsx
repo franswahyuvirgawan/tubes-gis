@@ -6,8 +6,9 @@ import useUserStore from "../store/userStore";
 import polyline from "polyline-encoded";
 import L from "leaflet";
 import "leaflet-draw/dist/leaflet.draw.css";
+import { PuffLoader } from "react-spinners";
 import "leaflet/dist/leaflet.css";
-import { FeatureGroup, MapContainer, TileLayer } from "react-leaflet";
+import { FeatureGroup, MapContainer, Popup, TileLayer } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import haversine from "haversine";
 import toast, { Toaster } from "react-hot-toast";
@@ -130,6 +131,7 @@ const Lihat = () => {
     }
   };
 
+  const [renderMap, setRenderMap] = useState(false);
   const fetchDataRuasJalan = async () => {
     try {
       const response = await axios.get(
@@ -141,6 +143,24 @@ const Lihat = () => {
         }
       );
       setDataAllRuasJalan(response.data.ruasjalan);
+      setRenderMap(true);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const fetchDataRuasNewJalan = async () => {
+    try {
+      const response = await axios.get(
+        `https://gisapis.manpits.xyz/api/ruasjalan/${store.idRuas}`,
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      setDataAllRuasJalan(response.data.ruasjalan);
+      setRenderMap(true);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -235,6 +255,13 @@ const Lihat = () => {
     fetchDataRuasJalan();
   }, []);
 
+  useEffect(() => {
+    if (renderMap) {
+      fetchDataRuasNewJalan();
+    }
+  }, [renderMap]);
+
+  console.log(dataAllRuasJalan);
   useEffect(() => {
     if (valueProvinsi) {
       fetchDataKabupaten(valueProvinsi);
@@ -487,10 +514,9 @@ const Lihat = () => {
       <div className="flex justify-center items-center flex-col font-martian text-white gap-[50px]">
         <MapContainer
           className="Map"
-          center={{ lat: -8.60355596857304, lng: 115.25943918278261 }}
-          zoom={11}
+          center={[-8.319202437081701, 115.51059150415131]}
+          zoom={20}
           scrollWheelZoom={true}
-          style={{ height: "80vh", width: "1000px", borderRadius: "0px" }}
         >
           <FeatureGroup ref={featureGroupRef}></FeatureGroup>
           <TileLayer
@@ -498,6 +524,78 @@ const Lihat = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
         </MapContainer>
+        {decodePolylines.length > 0 ? (
+          <MapContainer
+            className="Map"
+            center={decodePolylines[0]}
+            zoom={20}
+            scrollWheelZoom={true}
+            style={{ height: "80vh", width: "1000px", borderRadius: "0px" }}
+          >
+            <FeatureGroup ref={featureGroupRef}>
+              <Popup>
+                <table>
+                  <div className="py-4">
+                    <tr>
+                      <td className="px-3 py-3">Desa</td>
+                      <td className="px-3 py-3">
+                        {filteredDataDesa[0]?.label}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Kode Ruas</td>
+                      <td className="px-3 py-3">{valueKodeRuas}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Nama Ruas</td>
+                      <td className="px-3 py-3">{valueRuasJalan}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Panjang Jalan</td>
+                      <td className="px-3 py-3">{`${parseFloat(jarak).toFixed(
+                        2
+                      )} Meter`}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Lebar Jalan</td>
+                      <td className="px-3 py-3">{valueLebar}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Eksisting Jalan</td>
+                      <td className="px-3 py-3">
+                        {filteredEksistingJalan[0]?.label}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Kondisi Jalan</td>
+                      <td className="px-3 py-3">
+                        {filteredKondisiJalan[0]?.label}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Jenis Jalan</td>
+                      <td className="px-3 py-3">
+                        {filteredJenisJalan[0]?.label}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-3">Keterangan Jalan</td>
+                      <td className="px-3 py-3">{valueKeterangan}</td>
+                    </tr>
+                  </div>
+                </table>
+              </Popup>
+            </FeatureGroup>
+            <TileLayer
+              attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          </MapContainer>
+        ) : (
+          <div className="w-full absolute flex flex-row items-center justify-center bg-[#1D232A] h-screen bg-opacity-90">
+            <PuffLoader color="#fff" />
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-[20px] justify-start items-center w-[70%] px-[70px]">
         <div className="w-full flex flex-col gap-2">
@@ -653,7 +751,7 @@ const Lihat = () => {
         </div>
         <div className="flex flex-col gap-2 w-full">
           <input
-            value={jarak + " meter"}
+            value={parseFloat(dataAllRuasJalan?.panjang).toFixed(2) + " Meter"}
             disabled
             type="text"
             placeholder="Panjang"
