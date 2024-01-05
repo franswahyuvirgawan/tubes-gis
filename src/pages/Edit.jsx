@@ -31,7 +31,6 @@ const Edit = () => {
   const [dataAllProvinsi, setDataAllProvinsi] = useState([]);
   const [dataAllKabupaten, setDataAllKabupaten] = useState([]);
   const [dataAllKecamatan, setDataAllKecamatan] = useState([]);
-  const [dataFilterAllDesa, setDataFilterAllDesa] = useState([]);
   const [dataAllEksistingJalan, setDataAllEksistingJalan] = useState([]);
   const [dataAllKondisiJalan, setDataAllKondisiJalan] = useState([]);
   const [dataAllJenisJalan, setDataAllJenisJalan] = useState([]);
@@ -41,6 +40,7 @@ const Edit = () => {
   const [valueLebar, setValueLebar] = useState("");
   const [valueKeterangan, setValueKeterangan] = useState("");
   const [errors, setErrors] = useState([]);
+  const [sortedData, setSortedData] = useState([]);
 
   // select
   const [valueDesa, setValueDesa] = useState("");
@@ -186,6 +186,23 @@ const Edit = () => {
     }
   };
 
+  const [allDataWilayah, setAllDataWilayah] = useState([]);
+  const fetchAllDataWilayah = async (valueKecamatan) => {
+    try {
+      const response = await axios.get(
+        "https://gisapis.manpits.xyz/api/mregion",
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      setAllDataWilayah(response.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   const fetchDataProvinsi = async () => {
     try {
       const response = await axios.get(
@@ -253,6 +270,7 @@ const Edit = () => {
     fetchDataKondisiJalan();
     fetchDataJenisJalan();
     fetchDataRuasJalan();
+    fetchAllDataWilayah();
   }, []);
 
   useEffect(() => {
@@ -260,6 +278,14 @@ const Edit = () => {
       fetchDataRuasNewJalan();
     }
   }, [renderMap]);
+
+  useEffect(() => {
+    fetchDataKabupaten(sortedData?.provinsi?.value);
+  }, [sortedData]);
+
+  useEffect(() => {
+    fetchDataKecamatan(sortedData?.kabupaten?.value);
+  }, [sortedData]);
 
   useEffect(() => {
     if (valueProvinsi) {
@@ -297,6 +323,7 @@ const Edit = () => {
   }, [dataAllRuasJalan]);
 
   const [editedData, setEditedData] = useState([]);
+  const [renderPanjang, setRenderPanjang] = useState(false);
   const [jarak, setJarak] = useState(0);
 
   const calculateDistance = (coord1, coord2) => {
@@ -343,6 +370,7 @@ const Edit = () => {
       0
     );
     setJarak(totalDistance);
+    setRenderPanjang(true);
   };
 
   useEffect(() => {
@@ -356,6 +384,11 @@ const Edit = () => {
     dataAllRuasJalan?.lebar,
     dataAllRuasJalan?.keterangan,
   ]);
+
+  useEffect(() => {
+    setValueKecamatan("");
+    setDataAllDesa([]);
+  }, [valueKabupaten]);
 
   const navigate = useNavigate();
 
@@ -397,13 +430,13 @@ const Edit = () => {
     };
     setErrors({});
     const inputErrors = {};
-    if (!valueProvinsi) {
+    if (!valueProvinsi && !sortedData.provinsi) {
       inputErrors.valueProvinsi = "Silahkan isi provinsi";
     }
-    if (!valueKabupaten) {
+    if (!valueKabupaten && !sortedData.kabupaten) {
       inputErrors.valueKabupaten = "Silahkan isi kabupaten";
     }
-    if (!valueKecamatan) {
+    if (!valueKecamatan && !sortedData.kecamatan) {
       inputErrors.valueKecamatan = "Silahkan isi kecamatan";
     }
     if (!valueDesa && !filteredDataDesa[0]?.value) {
@@ -456,27 +489,6 @@ const Edit = () => {
     }
   };
 
-  const region = [
-    {
-      title: "Provinsi",
-      data: dataAllProvinsi,
-      setValue: setValueProvinsi,
-      errors: errors?.valueProvinsi,
-    },
-    {
-      title: "Kabupaten",
-      data: dataAllKabupaten,
-      setValue: setValueKabupaten,
-      errors: errors?.valueKabupaten,
-    },
-    {
-      title: "Kecamatan",
-      data: dataAllKecamatan,
-      setValue: setValueKecamatan,
-      errors: errors?.valueKecamatan,
-    },
-  ];
-
   const customStyles = {
     control: (base) => ({
       ...base,
@@ -511,6 +523,92 @@ const Edit = () => {
       color: "white",
     }),
   };
+
+  useEffect(() => {
+    if (allDataWilayah && allDataWilayah.desa) {
+      const targetDesaId = 736;
+      const targetDesa = allDataWilayah.desa.find(
+        (desa) => desa.id === targetDesaId
+      );
+
+      if (targetDesa) {
+        // Temukan kecamatan berdasarkan ID kecamatan dari desa
+        const targetKecamatan = allDataWilayah?.kecamatan.find(
+          (kecamatan) => kecamatan.id === targetDesa.kec_id
+        );
+
+        // Temukan kabupaten berdasarkan ID kabupaten dari kecamatan
+        const targetKabupaten = allDataWilayah?.kabupaten.find(
+          (kabupaten) => kabupaten.id === targetKecamatan.kab_id
+        );
+
+        // Temukan provinsi berdasarkan ID provinsi dari kabupaten
+        const targetProvinsi = allDataWilayah?.provinsi.find(
+          (provinsi) => provinsi.id === targetKabupaten.prov_id
+        );
+
+        // Format hasil sesuai dengan objek test
+        const sortedData = {
+          provinsi: {
+            value: targetProvinsi.id,
+            label: targetProvinsi.provinsi,
+          },
+          kabupaten: {
+            value: targetKabupaten.id,
+            label: targetKabupaten.kabupaten,
+          },
+          kecamatan: {
+            value: targetKecamatan.id,
+            label: targetKecamatan.kecamatan,
+          },
+          desa: {
+            value: targetDesa.id,
+            label: targetDesa.desa,
+          },
+        };
+
+        setSortedData(sortedData);
+      } else {
+        console.log(`Desa dengan ID ${targetDesaId} tidak ditemukan.`);
+      }
+    }
+  }, [allDataWilayah]);
+
+  const region = [
+    {
+      value: valueProvinsi ? valueProvinsi : sortedData?.provinsi,
+      title: "Provinsi",
+      data: dataAllProvinsi,
+      setValue: setValueProvinsi,
+      errors: errors?.valueProvinsi,
+    },
+    {
+      value: valueKabupaten ? valueKabupaten : sortedData?.kabupaten,
+      title: "Kabupaten",
+      data: dataAllKabupaten,
+      setValue: setValueKabupaten,
+      errors: errors?.valueKabupaten,
+      render: valueProvinsi,
+    },
+    {
+      value: valueKabupaten ? valueKecamatan : sortedData?.kecamatan,
+      title: "Kecamatan",
+      data: dataAllKecamatan,
+      setValue: setValueKecamatan,
+      errors: errors?.valueKecamatan,
+      render: valueKabupaten,
+    },
+    {
+      value: valueKecamatan ? valueDesa : filteredDataDesa,
+      title: "Desa",
+      data: dataAllDesa,
+      setValue: setValueDesa,
+      errors: errors?.valueDesa,
+      render: valueKecamatan || valueKabupaten,
+    },
+  ];
+
+  console.log(valueDesa);
 
   return (
     <div
@@ -548,7 +646,7 @@ const Edit = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
         </MapContainer>
-        {decodePolylines.length > 0 ? (
+        {Object.keys(sortedData).length > 0 ? (
           <MapContainer
             className="Map"
             center={decodePolylines[0]}
@@ -584,36 +682,21 @@ const Edit = () => {
         )}
       </div>
       <div className="flex flex-col gap-[20px] justify-start items-center w-[70%] px-[70px]">
-        {region.map((item, key) => (
-          <SelectOptions
-            key={key}
-            title={item.title}
-            data={item.data}
-            setValue={item.setValue}
-            errors={item.errors}
-          />
-        ))}
-        <div className="w-full flex flex-col gap-2">
-          <label htmlFor="">Desa</label>
-          {filteredDataDesa.length > 0 ? (
-            <Select
-              defaultValue={filteredDataDesa} // Jika hanya satu item, mungkin Anda ingin mengakses index 0
-              styles={customStyles}
-              onChange={(e) => setValueDesa(e.value)}
-            />
-          ) : (
-            <>
-              <Select
-                styles={customStyles}
-                options={dataAllDesa}
-                onChange={(e) => setValueDesa(e.value)}
+        {Object.keys(sortedData).length > 0 && (
+          <>
+            {region.map((item, key) => (
+              <SelectOptions
+                key={key}
+                defaultValue={item.value}
+                errors={item.errors}
+                title={item.title}
+                data={item.data}
+                render={item.render}
+                setValue={item.setValue}
               />
-            </>
-          )}
-          {errors?.valueDesa && (
-            <p className="px-2 text-red-500 text-xs">{errors?.valueDesa}</p>
-          )}
-        </div>
+            ))}
+          </>
+        )}
         <div className="w-full flex flex-col gap-2">
           <label htmlFor="">Eksisting Jalan</label>
           {filteredEksistingJalan.length > 0 ? (
@@ -758,7 +841,12 @@ const Edit = () => {
         </div>
         <div className="flex flex-col gap-2 w-full">
           <input
-            value={parseFloat(jarak).toFixed(2) + " Meter"}
+            value={
+              renderPanjang && !isNaN(jarak)
+                ? parseFloat(jarak).toFixed(2) + " Meter"
+                : parseFloat(dataAllRuasJalan?.panjang ?? 0).toFixed(2) +
+                  " Meter"
+            }
             disabled
             type="text"
             placeholder="Panjang"

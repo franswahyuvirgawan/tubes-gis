@@ -16,6 +16,7 @@ import KondisiJalan from "./pages/KondisiJalan";
 import Login from "./pages/Login";
 import Region from "./pages/Region";
 import RuasJalan from "./pages/RuasJalan";
+import RuasJalanMaps from "./pages/RuasJalanMaps";
 import SemuaDataUser from "./pages/SemuaDataUser";
 import Tambah from "./pages/Tambah";
 import useUserStore from "./store/userStore";
@@ -48,6 +49,7 @@ function App() {
             <Route path="/mjenisjalan" element={<JenisJalan />} />
             <Route path="/mkondisi" element={<KondisiJalan />} />
             <Route path="/ruas-jalan" element={<RuasJalan />} />
+            <Route path="/ruas-jalan-maps" element={<RuasJalanMaps />} />
             <Route path="/tambah" element={<Tambah />} />
             <Route path="/lihat" element={<Lihat />} />
             <Route path="/edit" element={<Edit />} />

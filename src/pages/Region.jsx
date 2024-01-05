@@ -20,7 +20,6 @@ function Region() {
         }
       );
       setDataAllRegion(response.data);
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -29,6 +28,56 @@ function Region() {
   useEffect(() => {
     fetchDataPerUser();
   }, []);
+
+  const mapDataWithParent = (
+    childData,
+    parentData,
+    parentIdKey,
+    parentNameKey
+  ) =>
+    childData.map((childItem) => {
+      const parentItem = parentData.find(
+        (parent) => parent.id === childItem[parentIdKey]
+      );
+      return {
+        [parentNameKey]: parentItem ? parentItem[parentNameKey] : null,
+        ...childItem,
+      };
+    });
+
+  const dataKabupaten =
+    dataAllRegion?.kabupaten &&
+    dataAllRegion?.provinsi &&
+    mapDataWithParent(
+      dataAllRegion.kabupaten,
+      dataAllRegion.provinsi,
+      "prov_id",
+      "provinsi"
+    );
+
+  const dataKecamatan =
+    dataAllRegion?.kecamatan &&
+    dataAllRegion?.kabupaten &&
+    mapDataWithParent(
+      dataAllRegion.kecamatan,
+      dataAllRegion.kabupaten,
+      "kab_id",
+      "kabupaten"
+    );
+
+  const dataDesa =
+    dataAllRegion?.desa &&
+    dataAllRegion?.kecamatan &&
+    mapDataWithParent(
+      dataAllRegion.desa,
+      dataAllRegion.kecamatan,
+      "kec_id",
+      "kecamatan"
+    );
+
+  useEffect(() => {
+    setLoading(false);
+  }, [dataKabupaten, dataKecamatan, dataDesa, dataAllRegion]);
 
   return (
     <>
@@ -83,7 +132,7 @@ function Region() {
                 <thead>
                   <tr>
                     <th className="text-center">Id</th>
-                    <th className="text-center">prov_id</th>
+                    <th className="text-center">Provinsi</th>
                     <th className="text-center">kabupaten</th>
                   </tr>
                 </thead>
@@ -98,10 +147,10 @@ function Region() {
                     </tr>
                   ) : (
                     <>
-                      {dataAllRegion?.kabupaten.map((item, key) => (
+                      {dataKabupaten?.map((item, key) => (
                         <tr key={key}>
                           <th className="text-center">{item.id}</th>
-                          <th className="text-center">{item.prov_id}</th>
+                          <th className="text-center">{item.provinsi}</th>
                           <td className="text-center">{item.kabupaten}</td>
                         </tr>
                       ))}
@@ -123,7 +172,7 @@ function Region() {
                 <thead>
                   <tr>
                     <th className="text-center">Id</th>
-                    <th className="text-center">kab_id</th>
+                    <th className="text-center">Kabupaten</th>
                     <th className="text-center">kecamatan</th>
                   </tr>
                 </thead>
@@ -138,10 +187,10 @@ function Region() {
                     </tr>
                   ) : (
                     <>
-                      {dataAllRegion?.kecamatan.map((item, key) => (
+                      {dataKecamatan?.map((item, key) => (
                         <tr key={key}>
                           <th className="text-center">{item.id}</th>
-                          <th className="text-center">{item.kab_id}</th>
+                          <th className="text-center">{item.kabupaten}</th>
                           <td className="text-center">{item.kecamatan}</td>
                         </tr>
                       ))}
@@ -163,7 +212,7 @@ function Region() {
                 <thead>
                   <tr>
                     <th className="text-center">Id</th>
-                    <th className="text-center">kec_id</th>
+                    <th className="text-center">Kecamatan</th>
                     <th className="text-center">desa</th>
                   </tr>
                 </thead>
@@ -178,10 +227,10 @@ function Region() {
                     </tr>
                   ) : (
                     <>
-                      {dataAllRegion?.desa.map((item, key) => (
+                      {dataDesa?.map((item, key) => (
                         <tr key={key}>
                           <th className="text-center">{item.id}</th>
-                          <th className="text-center">{item.kec_id}</th>
+                          <th className="text-center">{item.kecamatan}</th>
                           <td className="text-center">{item.desa}</td>
                         </tr>
                       ))}

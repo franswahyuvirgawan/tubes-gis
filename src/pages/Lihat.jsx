@@ -246,7 +246,25 @@ const Lihat = () => {
     }
   };
 
+  const [allDataWilayah, setAllDataWilayah] = useState([]);
+  const fetchAllDataWilayah = async (valueKecamatan) => {
+    try {
+      const response = await axios.get(
+        "https://gisapis.manpits.xyz/api/mregion",
+        {
+          headers: {
+            Authorization: `Bearer ${store.userToken}`,
+          },
+        }
+      );
+      setAllDataWilayah(response.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   useEffect(() => {
+    fetchAllDataWilayah();
     fetchDataEksistingJalan();
     fetchGetDataDesa();
     fetchDataProvinsi();
@@ -448,27 +466,6 @@ const Lihat = () => {
     }
   };
 
-  const region = [
-    {
-      title: "Provinsi",
-      data: dataAllProvinsi,
-      setValue: setValueProvinsi,
-      errors: errors?.valueProvinsi,
-    },
-    {
-      title: "Kabupaten",
-      data: dataAllKabupaten,
-      setValue: setValueKabupaten,
-      errors: errors?.valueKabupaten,
-    },
-    {
-      title: "Kecamatan",
-      data: dataAllKecamatan,
-      setValue: setValueKecamatan,
-      errors: errors?.valueKecamatan,
-    },
-  ];
-
   const customStyles = {
     control: (base) => ({
       ...base,
@@ -503,6 +500,83 @@ const Lihat = () => {
       color: "white",
     }),
   };
+
+  const [sortedData, setSortedData] = useState([]);
+  useEffect(() => {
+    if (allDataWilayah && allDataWilayah.desa) {
+      const targetDesaId = 736;
+      const targetDesa = allDataWilayah.desa.find(
+        (desa) => desa.id === targetDesaId
+      );
+
+      if (targetDesa) {
+        // Temukan kecamatan berdasarkan ID kecamatan dari desa
+        const targetKecamatan = allDataWilayah?.kecamatan.find(
+          (kecamatan) => kecamatan.id === targetDesa.kec_id
+        );
+
+        // Temukan kabupaten berdasarkan ID kabupaten dari kecamatan
+        const targetKabupaten = allDataWilayah?.kabupaten.find(
+          (kabupaten) => kabupaten.id === targetKecamatan.kab_id
+        );
+
+        // Temukan provinsi berdasarkan ID provinsi dari kabupaten
+        const targetProvinsi = allDataWilayah?.provinsi.find(
+          (provinsi) => provinsi.id === targetKabupaten.prov_id
+        );
+
+        // Format hasil sesuai dengan objek test
+        const sortedData = {
+          provinsi: {
+            value: targetProvinsi.id,
+            label: targetProvinsi.provinsi,
+          },
+          kabupaten: {
+            value: targetKabupaten.id,
+            label: targetKabupaten.kabupaten,
+          },
+          kecamatan: {
+            value: targetKecamatan.id,
+            label: targetKecamatan.kecamatan,
+          },
+          desa: {
+            value: targetDesa.id,
+            label: targetDesa.desa,
+          },
+        };
+
+        setSortedData(sortedData);
+      } else {
+        console.log(`Desa dengan ID ${targetDesaId} tidak ditemukan.`);
+      }
+    }
+  }, [allDataWilayah]);
+
+  const region = [
+    {
+      defaultValue: sortedData?.provinsi,
+      title: "Provinsi",
+      data: dataAllProvinsi,
+      setValue: setValueProvinsi,
+      errors: errors?.valueProvinsi,
+    },
+    {
+      defaultValue: sortedData?.kabupaten,
+      title: "Kabupaten",
+      data: dataAllKabupaten,
+      setValue: setValueKabupaten,
+      errors: errors?.valueKabupaten,
+      render: valueProvinsi,
+    },
+    {
+      defaultValue: sortedData?.kecamatan,
+      title: "Kecamatan",
+      data: dataAllKecamatan,
+      setValue: setValueKecamatan,
+      errors: errors?.valueKecamatan,
+      render: valueKabupaten,
+    },
+  ];
 
   return (
     <div
@@ -598,6 +672,35 @@ const Lihat = () => {
         )}
       </div>
       <div className="flex flex-col gap-[20px] justify-start items-center w-[70%] px-[70px]">
+        {region.map((item, key) => (
+          <div key={key} className="w-full flex flex-col gap-2">
+            {Object.keys(sortedData).length > 0 ? (
+              <SelectOptions
+                defaultValue={item.defaultValue}
+                errors={item.errors}
+                title={item.title}
+                data={item.data}
+                render={true}
+                isDisabled={true}
+                setValue={item.setValue}
+              />
+            ) : (
+              <>
+                <SelectOptions
+                  errors={item.errors}
+                  title={item.title}
+                  data={item.data}
+                  render={true}
+                  isDisabled={true}
+                  setValue={item.setValue}
+                />
+              </>
+            )}
+            {errors?.valueDesa && (
+              <p className="px-2 text-red-500 text-xs">{errors?.valueDesa}</p>
+            )}
+          </div>
+        ))}
         <div className="w-full flex flex-col gap-2">
           <label htmlFor="">Desa</label>
           {filteredDataDesa.length > 0 ? (
@@ -636,7 +739,7 @@ const Lihat = () => {
             />
           ) : (
             <>
-              <Select styles={customStyles} />
+              <Select isDisabled={true} styles={customStyles} />
             </>
           )}
           {errors?.valueEksistingJalan && (
@@ -660,7 +763,7 @@ const Lihat = () => {
             />
           ) : (
             <>
-              <Select styles={customStyles} />
+              <Select isDisabled={true} styles={customStyles} />
             </>
           )}
           {errors?.valueKondisiJalan && (
@@ -684,7 +787,7 @@ const Lihat = () => {
             />
           ) : (
             <>
-              <Select styles={customStyles} />
+              <Select isDisabled={true} styles={customStyles} />
             </>
           )}
           {errors?.valueJenisJalan && (

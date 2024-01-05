@@ -1,7 +1,16 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Select from "react-select";
 
-export default function SelectOptions({ title, data, setValue, errors }) {
+export default function SelectOptions({
+  title,
+  data,
+  setValue,
+  errors,
+  value,
+  defaultValue,
+  isDisabled = false,
+  render = null,
+}) {
   const customStyles = {
     control: (base) => ({
       ...base,
@@ -36,10 +45,20 @@ export default function SelectOptions({ title, data, setValue, errors }) {
       color: "white",
     }),
   };
+
+  const [key, setKey] = useState(0);
+
+  useEffect(() => {
+    setKey((prevKey) => prevKey + 1);
+  }, [render]);
+
   return (
     <div className="w-full flex flex-col gap-2">
       <label htmlFor="">{title}</label>
       <Select
+        defaultValue={defaultValue}
+        key={key}
+        isDisabled={isDisabled}
         styles={customStyles}
         options={data}
         onChange={(e) => setValue(e.value)}

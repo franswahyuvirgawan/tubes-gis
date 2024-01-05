@@ -13,6 +13,7 @@ import haversine from "haversine";
 import toast, { Toaster } from "react-hot-toast";
 import SelectOptions from "../components/SelectOptions";
 import Input from "../components/Input";
+import { render } from "react-dom";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -372,18 +373,21 @@ const Tambah = () => {
       data: dataAllKabupaten,
       setValue: setValueKabupaten,
       errors: errors?.valueKabupaten,
+      render: valueProvinsi,
     },
     {
       title: "Kecamatan",
       data: dataAllKecamatan,
       setValue: setValueKecamatan,
       errors: errors?.valueKecamatan,
+      render: valueKabupaten,
     },
     {
       title: "Desa",
       data: dataAllDesa,
       setValue: setValueDesa,
       errors: errors?.valueDesa,
+      render: valueKecamatan || valueKabupaten,
     },
     {
       title: "Eksisting Jalan",
@@ -432,6 +436,12 @@ const Tambah = () => {
     },
   ];
 
+  useEffect(() => {
+    setValueKecamatan([]);
+    setDataAllDesa([]);
+  }, [valueKabupaten]);
+
+  console.log(valueKabupaten);
   return (
     <div
       className={
@@ -476,6 +486,7 @@ const Tambah = () => {
             errors={item.errors}
             title={item.title}
             data={item.data}
+            render={item.render}
             setValue={item.setValue}
           />
         ))}
